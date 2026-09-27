@@ -1,0 +1,5 @@
+ma,ten,donGia,soLuong
+SP01,Loa Bluetooth,500000,4
+SP02,Lỗi thiếu cột,300000
+SP03,Giá không phải số,abc,10
+SP04,Cáp Type-C,120000,20

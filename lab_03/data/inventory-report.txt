@@ -1,0 +1,11 @@
+==================================================
+          BÁO CÁO TỔNG HỢP TỒN KHO
+==================================================
+Số lượng loại sản phẩm: 3
+- SP01 - Bàn phím cơ: 15,000,000 VND
+- SP02 - Chuột gaming không dây: 6,800,000 VND
+- SP03 - Màn hình 4K Dell UltraSharp: 36,000,000 VND
+--------------------------------------------------
+TỔNG GIÁ TRỊ TỒN KHO: 57,800,000 VND
+SẢN PHẨM CÓ GIÁ TRỊ TỒN CAO NHẤT: Màn hình 4K Dell UltraSharp (SP03) với 36,000,000 VND
+==================================================
