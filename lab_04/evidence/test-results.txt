@@ -1,0 +1,86 @@
+================================================================================
+BÁO CÁO THỰC THI KIỂM THỬ LAB 04: LẬP TRÌNH SOCKET TCP VÀ UDP TRONG JAVA
+Sinh viên: Phạm Ngọc Lang - MSSV: 25765251 - Lớp: 21BVL
+Môi trường: OpenJDK 17.0.20 (Temurin LTS ARM64) trên macOS 27.0
+================================================================================
+
+1. VÍ DỤ 4.1: KHẢO SÁT ĐỊA CHỈ MẠNG (HostInspector)
+- Lệnh: java -cp out network.HostInspector localhost
+  Kết quả:
+  Host: localhost
+  - IP: 127.0.0.1 (IPv4, Loopback: true, Site local: false)
+  - IP: 0:0:0:0:0:0:0:1 (IPv6, Loopback: true, Site local: false)
+
+- Lệnh: java -cp out network.HostInspector example.com
+  Kết quả:
+  Host: example.com
+  - IP: 172.66.147.243 (IPv4, Loopback: false, Site local: false)
+  - IP: 104.20.23.154 (IPv4, Loopback: false, Site local: false)
+  - IP: 2606:4700:10:0:0:0:6814:179a (IPv6, Loopback: false, Site local: false)
+  - IP: 2606:4700:10:0:0:0:ac42:93f3 (IPv6, Loopback: false, Site local: false)
+
+- Lệnh: java -cp out network.HostInspector host-khong-ton-tai.invalid
+  Kết quả: Bắt UnknownHostException -> "Không phân giải được host: host-khong-ton-tai.invalid"
+
+- Lệnh: java -cp out network.HostInspector (không tham số)
+  Kết quả: "Usage: java network.HostInspector <hostname>"
+
+--------------------------------------------------------------------------------
+2. VÍ DỤ 4.2 & 4.3: TCP COMMAND SERVER & MULTI-CLIENT (TcpCommandServer & MultiClientTcpServer)
+- Port lắng nghe: 5050 (tránh xung đột với AirPlay receiver cổng 5000 mặc định của macOS)
+- Giao thức dòng UTF-8:
+  * Client gửi "PING"            -> Server: "OK PONG"
+  * Client gửi "UPPER xin chào"  -> Server: "OK XIN CHÀO"
+  * Client gửi "TIME"            -> Server: "OK 2026-09-27T13:02:36..."
+  * Client gửi "ABC" (lệnh sai)  -> Server: "ERR UNKNOWN_COMMAND"
+  * Client gửi "QUIT"            -> Server: "OK BYE" (đóng kết nối phiên)
+- Multi-client: 2 client kết nối đồng thời qua ThreadPool (max 20 clients), phục vụ độc lập, client ngắt không ảnh hưởng client khác.
+
+--------------------------------------------------------------------------------
+3. VÍ DỤ 4.4: UDP REQUEST RESPONSE ECHO (UdpEchoServer & UdpEchoClient)
+- Port lắng nghe: 5001
+- Client gửi: "xin chào UDP" -> Server: "ACK XIN CHÀO UDP" (bảo toàn nguyên vẹn tiếng Việt UTF-8)
+- Kiểm thử khi server chưa chạy / dừng: Client có setSoTimeout(3000), sau 3 giây ném SocketTimeoutException: "Hết 3 giây nhưng chưa nhận được phản hồi" -> chương trình không bị treo vô hạn.
+
+--------------------------------------------------------------------------------
+4. BÀI TẬP ĐỀ XUẤT 1: HOST VÀ URI INSPECTOR (HostAndUriInspector)
+- 3 ca hợp lệ:
+  * Ca 1: localhost "http://localhost:8080/api/users?page=1#profile"
+    -> Phân giải IP localhost (127.0.0.1, ::1); URI: scheme=http, host=localhost, port=8080, path=/api/users, query=page=1, fragment=profile.
+  * Ca 2: example.com "https://example.com/docs/guide?lang=vi#chapter1"
+    -> Phân giải 4 địa chỉ IPv4/IPv6; URI: scheme=https, host=example.com, port=default, path=/docs/guide, query=lang=vi, fragment=chapter1.
+  * Ca 3: iuh.edu.vn "ftp://files.iuh.edu.vn:21/public/tailieu.pdf"
+    -> Phân giải IP 220.231.93.19; URI: scheme=ftp, host=files.iuh.edu.vn, port=21, path=/public/tailieu.pdf.
+- 3 ca lỗi:
+  * Ca lỗi 1 (Thiếu tham số): In thông báo cú pháp sử dụng.
+  * Ca lỗi 2 (Host không tồn tại): host-khong-ton-tai.invalid -> Báo lỗi không phân giải được host.
+  * Ca lỗi 3 (URI sai cú pháp): "http://invalid uri with spaces:8080/test" -> Báo lỗi URISyntaxException (ký tự khoảng trắng không hợp lệ).
+
+--------------------------------------------------------------------------------
+5. BÀI TẬP ĐỀ XUẤT 2: ĐỔI CHỮ SỐ THÀNH CHỮ (DigitToWordServer & DigitToWordClient)
+- Port: 5002
+- Kiểm thử đầy đủ các ca biên bắt buộc:
+  * Gửi '0'           -> Server phản hồi: "OK KHÔNG"
+  * Gửi '9'           -> Server phản hồi: "OK CHÍN"
+  * Gửi chuỗi rỗng "" -> Server phản hồi: "ERR INVALID_DIGIT"
+  * Gửi '10'          -> Server phản hồi: "ERR INVALID_DIGIT"
+  * Gửi 'a'           -> Server phản hồi: "ERR INVALID_DIGIT"
+  * Gửi ' 5 '         -> Server phản hồi: "ERR INVALID_DIGIT"
+  * Gửi 'QUIT'        -> Server phản hồi: "OK BYE"
+
+--------------------------------------------------------------------------------
+6. BÀI TẬP ĐỀ XUẤT 3: DỊCH VỤ NGÀY GIỜ TCP VÀ UDP (DateTimeService)
+- TCP (Port 5003):
+  * Gửi "DATE"     -> "OK 27 09 2026"
+  * Gửi "TIME"     -> "OK 13 18 38"
+  * Gửi "DATETIME" -> "OK 27 09 2026 13 18 38"
+  * Gửi "QUIT"     -> "OK BYE"
+- UDP (Port 5004):
+  * Gửi "DATE"     -> "OK 27 09 2026"
+  * Gửi "TIME"     -> "OK 13 18 39"
+  * Gửi "DATETIME" -> "OK 27 09 2026 13 18 39"
+  * Thoát bằng lệnh nội bộ client mà không cần bắt server đóng kết nối.
+- So sánh khi server dừng giữa chừng:
+  * TCP Client: Ném java.net.SocketException hoặc đọc được null khi readLine() -> Báo lỗi kết nối hoặc "Server đã đóng kết nối".
+  * UDP Client: Không biết server đã dừng ngay lập tức; chờ đến khi hết thời gian chờ setSoTimeout(3000) và ném java.net.SocketTimeoutException -> "Hết 3 giây nhưng chưa nhận được phản hồi".
+================================================================================
