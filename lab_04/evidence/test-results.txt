@@ -83,4 +83,88 @@ Môi trường: OpenJDK 17.0.20 (Temurin LTS ARM64) trên macOS 27.0
 - So sánh khi server dừng giữa chừng:
   * TCP Client: Ném java.net.SocketException hoặc đọc được null khi readLine() -> Báo lỗi kết nối hoặc "Server đã đóng kết nối".
   * UDP Client: Không biết server đã dừng ngay lập tức; chờ đến khi hết thời gian chờ setSoTimeout(3000) và ném java.net.SocketTimeoutException -> "Hết 3 giây nhưng chưa nhận được phản hồi".
+
+--------------------------------------------------------------------------------
+7. BÀI TẬP ĐỀ XUẤT 4: MÁY TÍNH TỪ XA TCP (CalcServer & CalcClient)
+- Port lắng nghe: 5005
+- Giao thức dòng UTF-8: CALC <toán_tử> <toán_hạng_1> <toán_hạng_2>
+- Kết quả kiểm thử 8 ca:
+  * Ca 1 (Cộng hợp lệ):  Gửi "CALC + 100 200" -> Server phản hồi: "OK 300"
+  * Ca 2 (Trừ hợp lệ):   Gửi "CALC - 50 15"   -> Server phản hồi: "OK 35"
+  * Ca 3 (Nhân hợp lệ):  Gửi "CALC * 12 8"    -> Server phản hồi: "OK 96"
+  * Ca 4 (Chia hợp lệ):  Gửi "CALC / 100 4"   -> Server phản hồi: "OK 25"
+  * Ca 5 (Chia cho 0):   Gửi "CALC / 10 0"    -> Server phản hồi: "ERR DIVIDE_BY_ZERO"
+  * Ca 6 (Toán tử lạ):   Gửi "CALC % 10 3"    -> Server phản hồi: "ERR UNSUPPORTED_OPERATOR"
+  * Ca 7 (Sai số):       Gửi "CALC + a 2"     -> Server phản hồi: "ERR INVALID_NUMBER"
+  * Ca 8 (Thiếu tham số):Gửi "CALC 10 20"     -> Server phản hồi: "ERR INVALID_FORMAT"
+  * Lệnh thoát:          Gửi "QUIT"           -> Server phản hồi: "OK BYE"
+
+--------------------------------------------------------------------------------
+8. BÀI TẬP ĐỀ XUẤT 5: CHAT TCP NHIỀU CLIENT - BÀI TỔNG HỢP (ChatServer & ChatClient)
+- Port lắng nghe: 5006
+- Quản lý đồng thời bằng ThreadPool (50 luồng) và ConcurrentHashMap<String, PrintWriter>
+- Kịch bản kiểm thử đa client:
+  * Client 1 kết nối: Nhận thông báo "OK CHAT_SERVER_READY. Vui lòng nhập lệnh NICK <tên>:"
+  * Client 1 gửi "NICK Alice" -> Server: "OK WELCOME Alice"
+  * Client 2 kết nối và gửi "NICK Alice" -> Server: "ERR NICK_TAKEN" (bảo đảm biệt danh duy nhất)
+  * Client 2 đổi "NICK Bob" -> Server: "OK WELCOME Bob"
+  * Server broadcast tức thời cho Alice: "[SYSTEM]: Bob đã tham gia phòng chat!"
+  * Bob gửi "MSG Xin chào Alice và cả phòng!" -> Server phản hồi Bob: "OK SENT"
+  * Alice nhận tin nhắn broadcast: "[Bob]: Xin chào Alice và cả phòng!"
+  * Alice kiểm tra thành viên: Gửi "USERS" -> Server: "OK USERS 2: [Bob, Alice]"
+  * Bob rời phòng: Gửi "QUIT" -> Server: "OK BYE", đóng kết nối Bob.
+  * Alice nhận thông báo hệ thống: "[SYSTEM]: Bob đã rời phòng chat."
+  * Alice kiểm tra lại: Gửi "USERS" -> Server: "OK USERS 1: [Alice]"
+
+--------------------------------------------------------------------------------
+9. BÀI TẬP ĐỀ XUẤT 6: THỰC NGHIỆM SO SÁNH HIỆU NĂNG TCP VÀ UDP (TcpUdpBenchmark)
+- Cấu hình đo lường: 1000 gói tin x 256 bytes | Thực hiện 5 vòng đo trung bình.
+- Kết quả thực nghiệm:
+  * Thời gian trung bình 1000 gói:
+    - TCP: 46.60 ms (Độ trễ trung bình: 0.047 ms/gói | Thông lượng: 21,459 gói/giây)
+    - UDP: 51.80 ms (Độ trễ trung bình: 0.052 ms/gói | Thông lượng: 19,305 gói/giây)
+  * Tỉ lệ nhận phản hồi: TCP đạt 100.0% (1000/1000), UDP đạt 100.0% (1000/1000) trên localhost.
+  * Tỉ lệ mất gói: 0.0% cho cả hai giao thức trên localhost.
+- Nhận xét khoa học:
+  1. TCP bảo đảm tính toàn vẹn 100% dữ liệu và giữ nguyên thứ tự gói nhờ cơ chế bắt tay 3 bước và retransmission.
+  2. UDP có header nhẹ (8 bytes vs 20 bytes của TCP), không overhead bắt tay, thích hợp truyền trực tuyến âm thanh/video thời gian thực.
+
+--------------------------------------------------------------------------------
+10. BÀI TẬP ĐỀ XUẤT 7: SERVER LƯU NHẬT KÝ TIN NHẮN THEO CLIENT (MessageLoggerServer & MessageLoggerClient)
+- Port lắng nghe: 5070 (hoặc mặc định 5007)
+- Kiểm tra an ninh Path Traversal:
+  * Ca clientId hợp lệ: "HELLO client_test_01" -> Server phản hồi: "OK HELLO client_test_01", ghi log an toàn vào file data/logs/client_test_01.txt.
+  * Ca clientId độc hại: "HELLO client../hack" -> Server phát hiện vi phạm định dạng: "ERR INVALID_CLIENT_ID (Chỉ chấp nhận chữ, số, gạch ngang '-', gạch dưới '_')".
+- Định dạng nhật ký chuẩn hóa: [2026-10-11T15:35:12] [/127.0.0.1:xxxxx] Nội dung tin nhắn.
+
+--------------------------------------------------------------------------------
+11. BÀI TẬP ĐỀ XUẤT 8: TRUYỀN FILE TCP AN TOÀN KÈM MÃ BĂM SHA-256 (FileTransferServer & FileTransferClient)
+- Port lắng nghe: 5008
+- Cơ chế truyền và xác thực:
+  * Client tính toán mã băm SHA-256 cục bộ trước khi truyền.
+  * Gửi metadata: "FILE tailieu_sample.txt 890 27a48b12867ebde6199d7cdf2f8c6868e67017a462cd887ef57f58fde5466691"
+  * Server kiểm tra tên file cơ sở (loại bỏ path traversal) -> Trả về: "OK READY_FOR_STREAM"
+  * Server nhận chính xác 890 bytes, tính lại mã SHA-256 qua luồng byte nhị phân MessageDigest.
+  * So khớp hoàn toàn trùng khớp -> Server phản hồi: "OK FILE_SAVED 27a48b12867ebde6199d7cdf2f8c6868e67017a462cd887ef57f58fde5466691"
+
+--------------------------------------------------------------------------------
+12. BÀI TẬP ĐỀ XUẤT 9: PHÁT SÓNG THÔNG BÁO MULTICAST (MulticastSender & MulticastReceiver)
+- Nhóm Multicast: 239.255.0.1:5010
+- Định tuyến giao diện mạng thực tế:
+  * Tự động lọc bỏ các adapter VPN ảo (utun*) gây lỗi "No route to host" trên macOS.
+  * Khởi động MulticastReceiver trên giao diện mạng vật lý (en0 / wifi / ethernet) với joinGroup(group, netIf).
+  * MulticastSender phát thông điệp -> Tất cả các Receiver đang tham gia nhóm đều nhận được đồng thời tức thì.
+  * Khi dừng chương trình, Receiver kích hoạt ShutdownHook thực thi leaveGroup sạch sẽ.
+
+--------------------------------------------------------------------------------
+13. BÀI TẬP ĐỀ XUẤT 10: TỰ ĐỘNG KHÁM PHÁ DỊCH VỤ VÀ KẾT NỐI TCP (DiscoveryServer & DiscoveryClient)
+- UDP Discovery Port: 5011 | TCP Service Port: 5012
+- Kịch bản thực thi tự động:
+  * Client gửi broadcast UDP: "DISCOVER_SERVICE"
+  * Server phản hồi: "SERVICE EchoTCP 5012 1.0"
+  * Client tự động bóc tách địa chỉ IP nguồn và cổng TCP 5012 để thiết lập kết nối Socket TCP.
+  * Client tương tác với dịch vụ TCP:
+    - Gửi "UPPER xin chào từ DiscoveryClient" -> Nhận "OK XIN CHÀO TỪ DISCOVERYCLIENT"
+    - Gửi "REVERSE Hệ Thống Tích Hợp"        -> Nhận "OK pợH hcíT gnốhT ệH"
+    - Gửi "QUIT"                             -> Nhận "OK BYE"
 ================================================================================
