@@ -54,14 +54,15 @@ def create_report(output_path):
     r_sub.font.name = "Times New Roman"
 
     # Student Info Box
-    tbl_info = doc.add_table(rows=5, cols=2)
+    tbl_info = doc.add_table(rows=6, cols=2)
     tbl_info.alignment = WD_TABLE_ALIGNMENT.CENTER
     info_data = [
         ("Sinh viên thực hiện:", "Phạm Ngọc Lang"),
         ("Mã số sinh viên (MSSV):", "25765251"),
         ("Lớp học phần:", "21BVL / 21PVL"),
         ("Giảng viên hướng dẫn:", "ThS. Giảng viên phụ trách môn"),
-        ("Link GitHub Repository cá nhân:", "https://github.com/langpn/pthtth_21bvl_25765251")
+        ("Link GitHub Repository cá nhân:", "https://github.com/langpn/pthtth_21bvl_25765251"),
+        ("Link Source Code bài kiểm tra:", "https://github.com/langpn/pthtth_21bvl_25765251/tree/main/kiem_tra_thuong_ky")
     ]
     for i, (k, v) in enumerate(info_data):
         row = tbl_info.rows[i]
@@ -72,7 +73,7 @@ def create_report(output_path):
         c0.paragraphs[0].runs[0].bold = True
         c0.paragraphs[0].runs[0].font.name = "Times New Roman"
         c1.paragraphs[0].runs[0].font.name = "Times New Roman"
-        if i == 4:
+        if i >= 4:
             c1.paragraphs[0].runs[0].bold = True
             c1.paragraphs[0].runs[0].font.color.rgb = RGBColor(0, 102, 204)
         set_cell_background(c0, "F2F2F2")
